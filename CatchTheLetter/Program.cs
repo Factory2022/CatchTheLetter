@@ -6,51 +6,64 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Diagnostics;
 using System.Windows.Forms;
+using System.IO;
 
 namespace CatchTheLetter
 {
     internal class Program
     {
-        public static int direction, barSpeed , width, hight;
+        public static int direction, barSpeed, width, hight;
         public static int xPositionOld, xPosition;
+        public static int lifes, score, hiscore, level, fallSpeed;
+        public static int count;
+
+        public static int numberOfLetters = 30;
+        public static int[,] letters = new int[numberOfLetters, 6];     // falling letters to catch
+        public static string[] words = new string[50];                  // words to seek
+        public static string[,] bigLetters = new string[26, 8];         // To display big letters on the console
+
         public static ConsoleKeyInfo cki;
-        public static int counter, marker1;
-        
-        
+        public static Random rnd = new Random();
+
+
         static void Main()
         {
             width = 100;
-            hight = 45;
+            hight = 60;
             xPosition = width / 2;
             xPositionOld = xPosition;
             barSpeed = 3;
-            counter = 0;
-            
+
+            LoadBigLetters();
+
             var timer = new Stopwatch();
+            timer.Start();
 
             Thread AskTheKey = new Thread(AskKey);
             AskTheKey.Start();
 
-            Thread StopMoving = new Thread(DiectionOff);
-            StopMoving.Start();
+
+            NewGame(); // call NewGame
 
 
             Console.WindowHeight = hight;
             Console.WindowWidth = width;
             Console.CursorLeft = xPosition;
-            Console.CursorTop = hight -5 ;
+            Console.CursorTop = hight - 5;
             Console.Write(@"\______/");
 
 
-           // public static ConsoleKeyInfo cki;
+
+
 
             while (true)
             {
 
                 DrawPlayer();
+                MoveLetters();
+
                 Thread.Sleep(20);
-                
-                timer.Start();
+
                 //B: Run stuff you want timed
                 //timer.Stop();
 
@@ -58,19 +71,17 @@ namespace CatchTheLetter
                 // Console.WriteLine(timeTaken);
 
             }
-
-
-
         }
 
 
-        public static void DrawPlayer()          
+        public static void DrawPlayer()
         {
-            
+
             if (direction == 1)
             {
                 xPosition += barSpeed;
                 if (xPosition > width - 9) xPosition = width - 9;
+                direction = 0;
             }
 
 
@@ -78,10 +89,11 @@ namespace CatchTheLetter
             {
                 xPosition -= barSpeed;
                 if (xPosition < 1) xPosition = 1;
+                direction = 0;
             }
 
             if (xPositionOld < 2) xPositionOld = 2;
-            Console.CursorLeft = xPositionOld-1;
+            Console.CursorLeft = xPositionOld - 1;
             Console.CursorTop = hight - 5;
             //if (direction != 0) Console.Write("           ");
             Console.Write("           ");
@@ -93,34 +105,30 @@ namespace CatchTheLetter
             Console.Write(@"\______/");
 
             xPositionOld = xPosition;
-            
+
             Console.CursorLeft = 1;
             Console.CursorTop = hight - 1;
 
-            
+
 
         }
 
         public static void AskKey()
         {
-            
+
             while (true)
             {
 
-                
+                cki = Console.ReadKey(true);
 
-                while (Console.KeyAvailable == true)
-                {
-                    cki = Console.ReadKey(true);
+                if (cki.Key == ConsoleKey.LeftArrow) direction = -1;
+                if (cki.Key == ConsoleKey.RightArrow) direction = 1;
 
-                    if (cki.Key == ConsoleKey.LeftArrow) direction = -1;
-                    if (cki.Key == ConsoleKey.RightArrow)  direction = 1;
-                    if (cki.Key != ConsoleKey.RightArrow && cki.Key != ConsoleKey.LeftArrow) direction = 0;
-                    
-                }
-               Thread.Sleep(20);
-               
-                
+
+
+                Thread.Sleep(20);
+
+
                 //Control.KeyUp;
 
 
@@ -128,13 +136,117 @@ namespace CatchTheLetter
             }
         }
 
-        public static void DiectionOff()
+        public static void NewGame()
         {
-            while (true)
+            lifes = 3;
+            score = 0;
+            level = 1;
+            fallSpeed = 2;
+            numberOfLetters = 10;
+
+            //Random rnd = new Random();
+            for (int i = 0; i < numberOfLetters; i++)
             {
-                Thread.Sleep(500);
-                //if (Console.KeyAvailable == false) direction = 0;
+                // char ch = (char)rnd.Next(65,90);
+                letters[i, 0] = rnd.Next(65, 90);
+                // Console.WriteLine((char) letters[i, 0] + "   " + letters[i,0]);
+
+                letters[i, 1] = rnd.Next(width/10 - 1) *10;            // X-Pos
+                letters[i, 2] = (rnd.Next(6)*10 - 50);              // Y-Pos
+                letters[i, 3] = letters[i, 1];                  // old x-Pos
+                letters[i, 4] = letters[i, 2];                  // old x-Pos
+
+                letters[i, 5] = rnd.Next(fallSpeed + 1);
+                
             }
+
+        }
+        public static void MoveLetters()
+        {
+            Thread.Sleep(20);
+
+            if (count >= 2)
+            {
+                for (int i = 0; i < numberOfLetters; i++)
+                {
+
+
+                   // if (letters[i, 2] >= 0)
+                    //{
+
+
+                        //Console.CursorLeft = letters[i, 1];         // X
+                        //Console.CursorTop = letters[i, 2];         // Y
+                        for (int j = 0; j < 7; j++)
+                        {
+                            // Clear Space used from old Pposition
+                            if (letters[i, 2] + j <= hight && letters[i, 2] >= 0)
+                            {
+
+                                if (letters[i, 2] + j -1 >= 0)
+                                {
+                                    Console.CursorLeft = letters[i, 1];
+                                    Console.CursorTop = letters[i, 2] + j - 1;
+                                    Console.Write("         ");
+                                }
+                            }
+
+                        }
+
+                        for (int j = 0; j < 7; j++)   // Paint Letters
+                        { 
+                            if (letters[i, 2] + j < hight && letters[i, 2] >= 0)     // >=0
+                            {
+                            
+                                Console.CursorLeft = letters[i, 1];         // X
+                                Console.CursorTop = letters[i, 2] + j;
+                                Console.Write(bigLetters[letters[i, 0] - 65, j]);
+                            
+                            }
+                        }
+                        
+                    //}
+                   
+
+                    letters[i, 3] = letters[i, 1];  // x old
+                    letters[i, 4] = letters[i, 2];  // Y old
+                    letters[i, 2] += 1; // letters[i, 5];
+
+
+
+
+                    if (letters[i, 2] > hight - 1)
+                    {
+                        letters[i, 1] = rnd.Next(width / 10 - 1) * 10;            // X-Pos
+                        letters[i, 2] = rnd.Next(6) * 10 - 50;                  // Y-Pos
+                    }
+
+                }
+                count = 0;
+            }
+            count++;
+        }
+
+        public static void LoadBigLetters()
+        {
+            StreamReader sr1 = new StreamReader("bigLetters.txt");
+            for (int i = 0; i < 26; i++)
+            {
+
+
+                for (int j = 0; j < 7; j++)
+                {
+                    bigLetters[i, j] = sr1.ReadLine();
+                }
+                sr1.ReadLine();
+            }
+            sr1.Close();
+
+            
+
         }
     }
+
+    
 }
+
