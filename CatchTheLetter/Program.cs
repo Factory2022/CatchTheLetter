@@ -147,15 +147,16 @@ namespace CatchTheLetter
             //Random rnd = new Random();
             for (int i = 0; i < numberOfLetters; i++)
             {
-                // char ch = (char)rnd.Next(65,90);
+                NewLetter(i);
+                /*
                 letters[i, 0] = rnd.Next(65, 90);
-                // Console.WriteLine((char) letters[i, 0] + "   " + letters[i,0]);
+                
 
                 letters[i, 1] = rnd.Next(width/10 - 1) *10;            // X-Pos
-                letters[i, 2] = (rnd.Next(6)*10 - 50);              // Y-Pos
+                letters[i, 2] = (rnd.Next(60) - 65);              // Y-Pos
                 letters[i, 3] = letters[i, 1];                  // old x-Pos
                 letters[i, 4] = letters[i, 2];                  // old x-Pos
-
+                */
                 letters[i, 5] = rnd.Next(fallSpeed + 1);
                 
             }
@@ -171,16 +172,11 @@ namespace CatchTheLetter
                 {
 
 
-                   // if (letters[i, 2] >= 0)
-                    //{
-
-
-                        //Console.CursorLeft = letters[i, 1];         // X
-                        //Console.CursorTop = letters[i, 2];         // Y
+                   
                         for (int j = 0; j < 7; j++)
                         {
                             // Clear Space used from old Pposition
-                            if (letters[i, 2] + j <= hight && letters[i, 2] >= 0)
+                            if (letters[i, 2] + j <= hight && letters[i, 2] + j >= 0)
                             {
 
                                 if (letters[i, 2] + j -1 >= 0)
@@ -189,13 +185,16 @@ namespace CatchTheLetter
                                     Console.CursorTop = letters[i, 2] + j - 1;
                                     Console.Write("         ");
                                 }
-                            }
+                           
+                        }
 
                         }
 
-                        for (int j = 0; j < 7; j++)   // Paint Letters
+                    // Paint Letters
+                    for (int j = 0; j < 7; j++)   
                         { 
-                            if (letters[i, 2] + j < hight && letters[i, 2] >= 0)     // >=0
+                            
+                            if (letters[i, 2] + j < hight-1 && letters[i, 2] +j >= 0)     // >=0
                             {
                             
                                 Console.CursorLeft = letters[i, 1];         // X
@@ -205,20 +204,13 @@ namespace CatchTheLetter
                             }
                         }
                         
-                    //}
+                    
                    
-
-                    letters[i, 3] = letters[i, 1];  // x old
-                    letters[i, 4] = letters[i, 2];  // Y old
                     letters[i, 2] += 1; // letters[i, 5];
-
-
-
-
-                    if (letters[i, 2] > hight - 1)
+                 
+                    if (letters[i, 2] > hight +5)
                     {
-                        letters[i, 1] = rnd.Next(width / 10 - 1) * 10;            // X-Pos
-                        letters[i, 2] = rnd.Next(6) * 10 - 50;                  // Y-Pos
+                        NewLetter(i);
                     }
 
                 }
@@ -242,8 +234,26 @@ namespace CatchTheLetter
             }
             sr1.Close();
 
-            
+        }
 
+        // New Letter at random position 
+        public static void NewLetter(int i)
+        {
+            letters[i, 0] = rnd.Next(65, 90);                   // new letter
+            letters[i, 1] = rnd.Next(width / 10 - 1) * 10;      // X-Pos
+            letters[i, 2] = rnd.Next(60) - 65;                  // Y-Pos
+
+            // X-pos overlap ?
+            for (int j = 0; j < numberOfLetters; j++)
+            {
+                if (letters[j, 1] > letters[i,1] -10 && letters[j, 1] < letters[i, 1] +10 && i!=j) letters[i, 1] = rnd.Next(width / 10 - 1) * 10;
+            }
+
+            //Y - position overlap ?
+            for (int j = 0; j < 7; j++)
+            {
+                if (letters[j, 2] > letters[i, 2] - 10 && letters[j, 2] < letters[i, 2] + 10 && i != j) letters[i, 2] = rnd.Next(60) - 65; ;
+            }
         }
     }
 
