@@ -16,15 +16,18 @@ namespace CatchTheLetter
         public static int direction, barSpeed, width, hight;
         public static int xPositionOld, xPosition;
         public static int lifes, score, hiscore, level, round, fallSpeed;
-        public static int count;
+        public static int count, letterLength;
+        public static int colisionWith;
 
         public static int numberOfLetters = 30;
         public static int[,] letters = new int[numberOfLetters, 6];     // falling letters to catch
         public static string[] words = new string[50];                  // words to seek
         public static string[,] bigLetters = new string[26, 8];         // To display big letters on the console
         public static string[,] wordsToQuest = new string[5,10];        // 5 words eatch level - 10 level now
-        public static string myWord;
-       
+        public static string myWord, tempWord, letterList, letterCompare;
+
+        public static string[,] smallLetters = new string[26, 6];         // To display small letters on the console
+        public static string[,] bigDigits = new string[10, 6];            // to display big digits 
 
         public static ConsoleKeyInfo cki;
         public static Random rnd = new Random();
@@ -49,7 +52,7 @@ namespace CatchTheLetter
 
             
 
-            wordsToQuest[0, 0] = "HUND";        // level 1
+            wordsToQuest[0, 0] = "HUHU";        // level 1
             wordsToQuest[1, 0] = "MAUS";
             wordsToQuest[2, 0] = "ELFE";
             wordsToQuest[3, 0] = "AUTO";
@@ -73,7 +76,7 @@ namespace CatchTheLetter
             {
                 xPosition += barSpeed;
                 if (xPosition > width - 9) xPosition = width - 9;
-                direction = 0;
+                //direction = 0;
             }
 
 
@@ -81,7 +84,7 @@ namespace CatchTheLetter
             {
                 xPosition -= barSpeed;
                 if (xPosition < 1) xPosition = 1;
-                direction = 0;
+                //direction = 0;
             }
 
             if (xPositionOld < 2) xPositionOld = 2;
@@ -112,6 +115,7 @@ namespace CatchTheLetter
                 if (cki.Key == ConsoleKey.LeftArrow) direction = -1;
                 if (cki.Key == ConsoleKey.RightArrow) direction = 1;
 
+                if (cki.Key != ConsoleKey.LeftArrow && cki.Key != ConsoleKey.RightArrow) direction = 0;
                 Thread.Sleep(20);
 
             }
@@ -126,7 +130,12 @@ namespace CatchTheLetter
             {
 
                 DrawPlayer();
+               
+                colisionWith = Collision();
+                if (colisionWith != -1) InsertLetter();
+
                 MoveLetters();
+
                 ShowGameValues();
 
                 Thread.Sleep(20);
@@ -151,7 +160,7 @@ namespace CatchTheLetter
             
             for (int i = 0; i < wordsToQuest[round - 1, level - 1].Length; i++) 
             {
-                myWord += "-";
+                myWord += "*";
             }
             
             Console.Clear();
@@ -220,7 +229,7 @@ namespace CatchTheLetter
 
             Console.CursorLeft = 40;
             Console.CursorTop = 8;
-            Console.Write(myWord);
+            Console.Write(myWord+"  Gefangen: "+letterList);
         }
         public static void MoveLetters()
         {
@@ -269,7 +278,7 @@ namespace CatchTheLetter
                     if (letters[i, 2] > hight +5)
                     {
                         NewLetter(i);
-                        sound1.Play();
+                        // sound1.Play();
                     }
 
                 }
@@ -278,7 +287,7 @@ namespace CatchTheLetter
             count++;
         }
 
-        // Load letters from file
+        // Load letters and digits from file
         public static void LoadBigLetters()
         {
             StreamReader sr1 = new StreamReader("bigLetters.txt");
@@ -290,6 +299,28 @@ namespace CatchTheLetter
                 }
                 sr1.ReadLine();
             }
+
+            // load small letters
+            for (int i = 0; i < 26; i++)
+            {
+                for (int j = 0; j < 6; j++)
+                {
+                    smallLetters[i, j] = sr1.ReadLine();
+                }
+                sr1.ReadLine();
+            }
+
+
+            // load big digits
+            for (int i = 0; i < 10; i++)
+            {
+                for (int j = 0; j < 6; j++)
+                {
+                    bigDigits[i, j] = sr1.ReadLine();
+                }
+                sr1.ReadLine();
+            }
+
             sr1.Close();
         }
 
@@ -301,23 +332,123 @@ namespace CatchTheLetter
             letters[i, 2] = rnd.Next(60) - 65;                  // Y-Pos
 
             // X-pos overlap ?
-            int testX = 0, testY =0;
-            for (int j = 0; j < numberOfLetters; j++)
+            int testX = 0, testY =0, j=0;
+            while (j < numberOfLetters)
             {
                 if (letters[j, 1] > letters[i, 1] - 10 && letters[j, 1] < letters[i, 1] + 10 && i != j) testX = 1;
-                if (letters[j, 2] > letters[i, 2] - 10 && letters[j, 2] < letters[i, 2] + 10 && i != j) testY = 1;
+                if (letters[j, 2] > letters[i, 2] - 10 && letters[j, 2] < letters[i, 2] + 15 && i != j) testY = 1;
 
                 if (testY==1 && testX==1)
                 {
                     letters[i, 1] = rnd.Next(width / 10 - 1) * 10;
-                    letters[i, 2] = rnd.Next(60) - 65;
+                    letters[i, 2] = rnd.Next(60) - 90 ;
                     testX = 0;
                     testY = 0;
-
+                    j= 0;
                 }
+                j++;
             }
 
            
+        }
+
+        public static int Collision()
+        {
+            bool testX = false, testY = false;
+            int collision=-1;    
+
+            for (int i = 0; i < numberOfLetters; i++)
+            {
+                if (letters[i, 1] > xPosition - 8 && letters[i, 1] < xPosition + 8 ) testX = true;
+                if (letters[i, 2] > hight - 12 && letters[i, 2] < hight -5 ) testY = true;
+                
+                if (testX == true && testY == true)
+                {
+                    collision = i;
+
+                    for (int j = 0; j < 7; j++)
+                    {
+                        // Clear Space used from old Pposition
+                        if (letters[i, 2] + j <= hight && letters[i, 2] + j >= 0)
+                        {
+
+                            if (letters[i, 2] + j - 1 >= 10)                         //>= 0    space from uppper border
+                            {
+                                Console.CursorLeft = letters[i, 1];
+                                Console.CursorTop = letters[i, 2] + j - 1;
+                                Console.Write("         ");
+                            }
+
+                        }
+
+                    }
+
+                    letterList += Convert.ToString((char)(letters[i, 0]));
+                    letterCompare = Convert.ToString((char)(letters[i, 0]));
+                    NewLetter(i);
+                    break;
+                }
+                testX = false;
+                testY = false;
+            }
+            return collision;
+
+
+        }
+
+        public static void InsertLetter()
+        {
+
+            int wordLength = wordsToQuest[round - 1, level - 1].Length;
+            string word    = wordsToQuest[round - 1, level - 1];
+            letterLength =  wordsToQuest[round - 1, level - 1].Length;
+            
+            tempWord = myWord;
+            myWord = "";
+            colisionWith = 0;
+
+
+            bool testIfDouble = false;
+            int i = 0;
+            int j =0;
+            //--------------------------------------------------------TEST!
+            while ( i < wordLength)
+            {
+                char testChar =  word [i];
+                string testString = Convert.ToString(testChar);     // Der Buchstabe im fertigen Wort der überprüft wird 
+                string testLetter = Convert.ToString(tempWord[i]);  // Der Buchstabe im meinem zusammengestezten Wort
+                                                                    // letterCompare = der gefangene Buchstabe
+                                                                    // myWord besteht erst aus ****
+                                                                    // kommt letterCompare imd testStrig vor?
+                                                                    // ist an dieser Stelle ein * (in myWord), dann wird die Stelle mit letterCompare erstezt
+                                                                    // nun wird der Rest von myWord mit dem Inhalt von tempWord aufgefüllt
+                                                                    // wenn H     =  H ist         und testLetter = *   Dann myWord = myWord + H 
+                if (testString == letterCompare && testLetter == "*" && testIfDouble == true)
+                {
+                    myWord += testLetter;
+                }
+
+                if (testString == letterCompare && testLetter == "*" && testIfDouble == false)
+                {
+                    myWord += letterCompare;
+                    testIfDouble=true;
+                    score += 100; 
+                }
+               
+
+                if (testString == letterCompare && testLetter != "*") myWord += testLetter;
+
+                if (testString != letterCompare && testLetter != "*") myWord += testLetter;
+
+                if (testString != letterCompare && testLetter == "*") myWord += "*";
+
+                i++;      
+            }
+           
+
+
+
+  
         }
     }
 
